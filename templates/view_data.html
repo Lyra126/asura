@@ -79,7 +79,7 @@
                                     var req1 = new XMLHttpRequest();
                                     //downloadFile(firstUrl);
                                     var titleElement = document.getElementById("name");
-                                    titleElement.innerHTML = firstUrl.substr(31,firstUrl.length-3); 
+                                    titleElement.innerHTML = firstUrl.substring(firstUrl.lastIndexOf('/') + 1);
                                     imageElement = document.querySelector("#latest-img");
                                     imageElement.src = firstUrl;
                                     previousUrl1 = firstUrl;
