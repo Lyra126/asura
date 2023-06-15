@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>List of all uploaded images</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style type="text/css">
+      .container {
+        max-width: 700px;
+        padding-top: 100px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h3>List of events</h3>
+      <ul>
+          {% for image in images_url %}
+            <li><a href="{{image}}">{{image}}</a></li>
+            {% else %}
+              <li>No images uploaded yet</li>
+          {% endfor %}
+      </ul>
+    </div>
+  </body>
+</html>
