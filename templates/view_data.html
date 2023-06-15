@@ -122,7 +122,7 @@
             }
 
             function extractFileName(url){
-                return url.substr(31,url.length)
+                return url.substring(url.lastIndexOf('/') + 1);
             }
 
             function fetchText(txtReq, secondUrl, callback) {
@@ -180,7 +180,6 @@
                 }
                 playLocalAudio('https://assets.mixkit.co/active_storage/sfx/765/765.wav');
                 // Show alert window
-                
                 window.alert('WARNING: Average frequency is below 37000, ice is present');
             }
             
@@ -195,7 +194,6 @@
                 elements[i].classList.remove('warning-color');
                 }
             }
-
         </script>                                                                                
     </body>
 </html>
