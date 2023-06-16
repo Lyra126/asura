@@ -154,20 +154,31 @@
             }
             
             function downloadFile(url) {
-                fetch(url)
-                    .then(response => response.blob())
-                    .then(blob => {
+                var fileExtension = url.substring(url.length - 3);
+                if (fileExtension === "txt") {
                     var a = document.createElement('a');
-                    a.href = URL.createObjectURL(blob);
+                    a.href = url;
                     a.download = url.split('/').pop();
                     a.style.display = 'none';
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
+                } else {
+                    fetch(url)
+                    .then(response => response.blob())
+                    .then(blob => {
+                        var a = document.createElement('a');
+                        a.href = URL.createObjectURL(blob);
+                        a.download = url.split('/').pop();
+                        a.style.display = 'none';
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
                     })
                     .catch(error => {
-                    console.error('Error:', error);
-                });
+                        console.error('Error:', error);
+                    });
+                }
             }
                         
             function checkForWarning(url){
