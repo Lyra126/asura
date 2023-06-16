@@ -96,7 +96,7 @@
                 var previousUrl1 = localStorage.getItem('previousUrl1') || '';    
                 if(previousUrl1 !== url){
                     var req1 = new XMLHttpRequest();
-                    //downloadFile(url);
+                    downloadFile(url);
                     var titleElement = document.getElementById("name");
                     titleElement.innerHTML = url.substring(url.lastIndexOf('/') + 1);
                     imageElement = document.querySelector("#latest-img");
@@ -117,7 +117,7 @@
                         textElement.innerHTML = text; 
                         if (text !== previousText2) {
                             var req2 = new XMLHttpRequest();
-                            //downloadFile(url);
+                            downloadFile(url);
                             localStorage.setItem('previousText2', text);
                         }
                     } else {
@@ -152,13 +152,19 @@
                 };
                 txtReq.send();
             }
+            
+            function downloadFile(url) {
+            
 
-            function downloadFile(fileUrl) {
-                var link = document.createElement('a');
-                link.href = fileUrl;
-                link.download = extractFileName(fileUrl);
-                link.click();
-            }
+  const a = document.createElement('a')
+  a.href = url
+  a.download = url.split('/').pop()
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+
+ 
+}
                         
             function checkForWarning(url){
                 var xhr = new XMLHttpRequest();
