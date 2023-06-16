@@ -31,7 +31,7 @@
         <script>
             //all variables, defining most of them to be global to improve performance and reduce memory allocated
             var updatesOn = false;
-            var homeURL = window.location.protocol + '//' + window.location.hostname;
+            var homeURL = window.location.protocol + '//' + window.location.hostname + ':' + window.location.port;
             var responseText;
             var parser;
             var htmlDoc;
@@ -46,7 +46,7 @@
             //starts updates when button is clicked
             document.getElementById("start").addEventListener("click", function(){
                 updatesOn = true;
-                startUpdate(" ", " ");
+                startUpdate();
             });
 
             //stops updates when button is clicked
@@ -55,7 +55,7 @@
             });
 
             //update function that sends XMLHttpRequest to homeurl to retrieve its contents and process them
-            function startUpdate(firstUrl, secondUrl){
+            function startUpdate(){
                 if(updatesOn){
                     var xhr = new XMLHttpRequest();
                     xhr.open('GET', homeURL, true);
@@ -67,58 +67,69 @@
 
                             //getting the first two links from the homeurl page which is assumed to be the latest image and its accompanying text file
                             var links = htmlDoc.querySelectorAll('a:nth-of-type(-n+2)');
-                            if (links.length >= 1) 
+                            if (links.length >= 1){
                                 firstUrl = links[0].href;
-                            if (links.length >= 2) 
-                                secondUrl = links[1].href;
-                                       
-                            //checks image against previously downloaded image, and if it's a different image, it downloads the new image and updates the page
-                            if (firstUrl && firstUrl !== " ") {
-                                var previousUrl1 = localStorage.getItem('previousUrl1') || '';    
-                                if(previousUrl1 !== firstUrl){
-                                    var req1 = new XMLHttpRequest();
-                                    //downloadFile(firstUrl);
-                                    var titleElement = document.getElementById("name");
-                                    titleElement.innerHTML = firstUrl.substring(firstUrl.lastIndexOf('/') + 1);
-                                    imageElement = document.querySelector("#latest-img");
-                                    imageElement.src = firstUrl;
-                                    previousUrl1 = firstUrl;
-                                    localStorage.setItem('previousUrl1', previousUrl1);
-                                }  
+                                processFile(firstUrl);
                             }
-                            
-                            //checks text file against previously downloaded file, and if it's a different file, it downloads the new text file and updates the page with its content
-                            if (secondUrl && secondUrl !== "") {
-
-                                var previousText2 = localStorage.getItem('previousText2') || '';
-                                var txtReq = new XMLHttpRequest();
-
-                                //fetches text from downloaded file and displays it on html page
-                                fetchText(txtReq, secondUrl, function(text) {
-                                    if (text !== null) {
-                                        textElement = document.getElementById("latest-txt");
-                                        textElement.innerHTML = text; 
-                                        if (text !== previousText2) {
-                                            var req2 = new XMLHttpRequest();
-                                            //downloadFile(secondUrl);
-                                            localStorage.setItem('previousText2', text);
-                                        }
-                                    } else {
-                                        //error handling
-                                        console.error('Failed to retrieve text');
-                                    }
-                                });
-                                checkForWarning(secondUrl);
-                                if(warning)
-                                    playWarning();
-                                else
-                                    setBackToOriginal();
-                            }    
+                            if (links.length >= 2){
+                                secondUrl = links[1].href;
+                                processFile(secondUrl);
+                            }
                         };
                     };
                     xhr.send();
-                    setTimeout(function() { startUpdate(""); }, 5000); 
+                    setTimeout(function() { startUpdate(); }, 5000); 
                 }
+            }
+
+            function processFile(url){
+                var fileExtension = url.substring(url.length - 3);
+                if(fileExtension === "jpg" || fileExtension === "png")
+                    processImage(url)
+                else if(fileExtension === "txt")
+                    processText(url)
+                else
+                    window.alert("Error: File format is not supported.");
+            }
+
+            function processImage(url){
+                var previousUrl1 = localStorage.getItem('previousUrl1') || '';    
+                if(previousUrl1 !== url){
+                    var req1 = new XMLHttpRequest();
+                    //downloadFile(url);
+                    var titleElement = document.getElementById("name");
+                    titleElement.innerHTML = url.substring(url.lastIndexOf('/') + 1);
+                    imageElement = document.querySelector("#latest-img");
+                    imageElement.src = url;
+                    previousUrl1 = url;
+                    localStorage.setItem('previousUrl1', previousUrl1);
+                }  
+            }
+
+            function processText(url){
+                var previousText2 = localStorage.getItem('previousText2') || '';
+                var txtReq = new XMLHttpRequest();
+
+                //fetches text from downloaded file and displays it on html page
+                fetchText(txtReq, url, function(text) {
+                    if (text !== null) {
+                        textElement = document.getElementById("latest-txt");
+                        textElement.innerHTML = text; 
+                        if (text !== previousText2) {
+                            var req2 = new XMLHttpRequest();
+                            //downloadFile(url);
+                            localStorage.setItem('previousText2', text);
+                        }
+                    } else {
+                        //error handling
+                        console.error('Failed to retrieve text');
+                    }
+                });
+                checkForWarning(url);
+                if(warning)
+                    playWarning();
+                else
+                    setBackToOriginal();
             }
 
             function extractFileName(url){
@@ -153,22 +164,24 @@
                 var xhr = new XMLHttpRequest();
                 xhr.open('GET', url, true);
                 xhr.onreadystatechange = function() {
-                    if (xhr.readyState === 4 && xhr.status === 200) {
-                        var fileContent = xhr.responseText;
-                        var lines = fileContent.split('\n');
-                        lines.forEach(function(line) {
-                            // Extract the average frequency value from the line
-                            var avgMatch = line.match(/AVG:\s+(\d+)/);
-                            
-                            if (avgMatch && avgMatch.length > 1) {
-                                var average = parseInt(avgMatch[1]);
-                                if (average < 37000)
-                                    warning = true;
-                                else
-                                    warning = false;
-                            }
-                        });
-                    }
+                if (xhr.status === 200) {
+                    var fileContent = xhr.responseText;
+                                var lines = fileContent.split('\n');
+                                lines.forEach(function(line) {
+                                    // Extract the average frequency value from the line
+                                    var avgMatch = line.match(/AVG:\s+(\d+)/);
+                                    
+                                    if (avgMatch && avgMatch.length > 1) {
+                                        var average = parseInt(avgMatch[1]);
+                                        if (average < 37000)
+                                            warning = true;
+                                        else
+                                            warning = false;
+                                    }
+                                });
+                } else {
+                    console.error('Error:', xhr.statusText);
+                }
                 };
                 xhr.send();
             }
