@@ -16,8 +16,10 @@
     </head>
     <body>
         <h1 class = "original-color">View Data</h1>
+        <h3 id = "warning" class = "original-color"></h3>
         <button id = "start">Start Auto Updates</button>
-        <button id = "stop">Stop Auto Updates</button>   
+        <button id = "stop">Stop Auto Updates</button>
+        <button id = "download" onclick="downloadAllFiles()">Download All Files</button>
         <br>
         <h3 id = "name" class = "original-color"></h3>
         <br>
@@ -42,6 +44,7 @@
             var imageElement;
             var textElement;
             var warning = false;
+            var warningElement = document.getElementById("warning");
 
             //starts updates when button is clicked
             document.getElementById("start").addEventListener("click", function(){
@@ -180,6 +183,23 @@
                     });
                 }
             }
+
+            //downloads all files currently saved on the server
+            function downloadAllFiles(){
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', homeURL, true);
+                xhr.onreadystatechange = function() {
+                    if (xhr.readyState === 4 && xhr.status === 200) {
+                        var responseText = xhr.responseText;
+                        var parser = new DOMParser();
+                        var htmlDoc = parser.parseFromString(responseText, 'text/html');
+                        var links = document.querySelectorAll('a');
+                        for (var i = 0; i < links.length; i++)
+                            downloadFile(links[i].href);
+                    }
+                };
+                xhr.send();
+            }
                         
             function checkForWarning(url){
                 var xhr = new XMLHttpRequest();
@@ -208,24 +228,26 @@
             }
 
             function playWarning(){
+                warningElement.innerHTML = "Warning!!";
                 var elements = document.getElementsByClassName('original-color');
                 for (var i = 0; i < elements.length; i++) {
                     elements[i].classList.add('warning-color');
                 }
-                playLocalAudio('https://assets.mixkit.co/active_storage/sfx/765/765.wav');
-                // Show alert window
-                window.alert('WARNING: Average frequency is below 37000, ice is present');
+                playLocalAudio('mixkit-alert-bells-echo-765.wav');
             }
             
             function playLocalAudio(fileUrl) {
                 var audioPlayer = document.getElementById('audioPlayer');
                 audioPlayer.src = fileUrl;
+                audioPlayer.play();
             }
 
             function setBackToOriginal() {
+                warningElement.innerHTML = "";
                 var elements = document.getElementsByClassName('warning-color');
+                
                 for (var i = 0; i < elements.length; i++) {
-                elements[i].classList.remove('warning-color');
+                    elements[i].classList.remove('warning-color');
                 }
             }
         </script>                                                                                
