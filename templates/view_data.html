@@ -47,8 +47,7 @@
             var previousUrl1;
             var previousUrl2;
             var audioPlayer;
-            var gotImage;
-            var gotText;
+            
 
             //starts updates when button is clicked
             document.getElementById("start").addEventListener("click", function(){
@@ -84,6 +83,8 @@
 
             //update function that sends XMLHttpRequest to homeurl to retrieve its contents and process them
             function startUpdate(){
+                var gotImage = 0;
+                var gotText = 0;
                 warningText = " ";
                 var xhr = new XMLHttpRequest();
                 xhr.open('GET', homeURL, true);
@@ -108,12 +109,12 @@
                                     gotText = 1;
                                 }     
                             } 
-                            if(gotImage === 1 && gotText === 1)
+                            if(gotImage === 1 && gotText === 1){
                                 return;
+                            }
+                                
                         }
-                        gotImage = 0;
-                        gotText = 0;
-                        return;
+                        
                     };
                 };
                 xhr.send();
