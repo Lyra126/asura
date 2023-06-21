@@ -148,8 +148,10 @@
             //downloads image, displays image and its name on web page, and stores name of image to compare
             //against next processed image so the same image doesn't get downloaded twice
             function processImage(url){
+                console.log("processed...");
                 previousUrl1 = localStorage.getItem('previousUrl1') || '';   
                 if(previousUrl1 !== url){
+                    console.log("processed2...");
                     //downloadFile(url);
                     var titleElement = document.getElementById("name");
                     titleElement.innerHTML = url.substring(url.lastIndexOf('/') + 1);
