@@ -29,7 +29,6 @@
         <br>
         <p id = "latest-txt" class = "original-color"></p>
         <br>
-        <audio id="audioPlayer" autoplay hidden></audio>
      
         <script>
             //all variables, defining most of them to be global to improve performance and reduce memory allocated
@@ -42,8 +41,6 @@
             var htmlDoc;
             var firstUrl = null;
             var secondUrl = null;
-            var imageElement;
-            var textElement;
             var warningElement = document.getElementById("warning");
             var warningText;
             var previousUrl1;
@@ -85,8 +82,6 @@
             //update function that sends XMLHttpRequest to homeurl to retrieve its contents and process them
             function startUpdate(){
                 warningText = " ";
-                //if(!isIce && !isFail && !lowAvgFreq)
-                  //  setBackToOriginal();
                 var xhr = new XMLHttpRequest();
                 xhr.open('GET', homeURL, true);
                 xhr.onreadystatechange = function() {
@@ -112,11 +107,17 @@
                 xhr.send();
             }
 
-            //note this is only expecting urls with extensions that consist of 3 characters
+            //note: this is only expecting urls with extensions that consist of 3 characters
             function getFileExtension(url){
                 return url.substring(url.length - 3);
             }
 
+            //extracts file name to display
+            function extractFileName(url){
+                return url.substring(url.lastIndexOf('/') + 1);
+            }
+
+            //processes text and image files accordingly
             function processFile(url){
                 var fileExtension = getFileExtension(url);
                 if(fileExtension === "jpg" || fileExtension === "png")
@@ -127,12 +128,15 @@
                     window.alert("Error: File format is not supported.");
             }
 
+            //downloads image, displays image and its name on web page, and stores name of image to compare
+            //against next processed image so the same image doesn't get downloaded twice
             function processImage(url){
                 previousUrl1 = localStorage.getItem('previousUrl1') || '';   
                 if(previousUrl1 !== url){
-                    downloadFile(url);
+                    //downloadFile(url);
                     var titleElement = document.getElementById("name");
                     titleElement.innerHTML = url.substring(url.lastIndexOf('/') + 1);
+                    var imageElement;
                     imageElement = document.querySelector("#latest-img");
                     imageElement.src = url;
                     previousUrl1 = url;
@@ -140,6 +144,8 @@
                 }  
             }
 
+            //downloads text, fetches content and displays it on web page, stores name of file to compare
+            //against next processed txt file so the same file doesn't get downloaded twice, checks content for errors
             function processText(url){
                 previousUrl2 = localStorage.getItem('previousUrl2') || '';    
                 if(previousUrl2 !== url){
@@ -147,10 +153,10 @@
                     //fetches text from downloaded file and displays it on html page
                     fetchText(txtReq, url, function(text) {
                         if (text !== null) {
+                            var textElement;
                             textElement = document.getElementById("latest-txt");
                             textElement.innerHTML = text; 
                             if (text !== previousUrl2) {
-                                var req2 = new XMLHttpRequest();
                                 downloadFile(url);
                                 localStorage.setItem('previousUrl2', text);
                             }
@@ -164,10 +170,7 @@
                 }
             }
 
-            function extractFileName(url){
-                return url.substring(url.lastIndexOf('/') + 1);
-            }
-
+            //fetches content from text file
             function fetchText(txtReq, secondUrl, callback) {
                 txtReq.open('GET', secondUrl, false);
                 txtReq.onload = function() {
@@ -185,7 +188,7 @@
                 txtReq.send();
             }
             
-            
+            //downloads either text or image file using fetch, blob, and a element
             function downloadFile(url) {
                 var fileExtension = url.substring(url.length - 3);
                 var a = document.createElement('a');
@@ -228,12 +231,17 @@
                 };
                 xhr.send();
             }
-                        
+            
+            //checks inputted txt content for ice, fail, or low avg frequency and outputs warning text accordingly
             function checkForWarning(text){
+                //resetting values
                 var isIce = false;
                 var isFail = false;
                 var lowAvgFreq = false;
+                if(!lowAvgFreq && !isFail && !isIce)
+                    setBackToOriginal();
                 warningText = " ";
+
                 var lines = text.split(/<br>|[\r\n]+/);
                 lines.forEach(function(line) {
                     //to save time, if all values are all true, just skip checking rest of the lines
@@ -261,14 +269,14 @@
                     playWarning();
             }
 
+            //all warning features
             function playWarning(){
                 //update warning text
                 warningElement.innerHTML = warningText;
                 var elements = document.getElementsByClassName('original-color');
                 //turn all text to red
-                for (var i = 0; i < elements.length; i++) {
+                for (var i = 0; i < elements.length; i++) 
                     elements[i].classList.add('warning-color');
-                }
                 //play alert audio
                 audioPlayer = document.getElementById('audioPlayer');
                 audioPlayer.src = homeURL + '/audio/alert.wav';
@@ -279,7 +287,6 @@
             function setBackToOriginal() {
                 warningElement.innerHTML = " ";
                 var elements = document.getElementsByClassName('warning-color');
-                
                 //to ignore the delay in the class removal due to the asynchronous nature of the code
                 var elements = Array.from(document.getElementsByClassName('warning-color'));
                 elements.forEach(function(element) {
