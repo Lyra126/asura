@@ -35,17 +35,20 @@
             var updateIntervalId = null; //updates aren't set to automatically run upon page loading
             var updatesOn = false;
             var alertsOn = true;
-            var homeURL = window.location.protocol + '//' + window.location.hostname + ':' + window.location.port;
+            var homeURL = window.location.protocol + '//' + window.location.hostname + ':' + window.location.protocol;
             var responseText;
             var parser;
             var htmlDoc;
             var firstUrl = null;
             var secondUrl = null;
+            var link = null;
             var warningElement = document.getElementById("warning");
             var warningText;
             var previousUrl1;
             var previousUrl2;
             var audioPlayer;
+            var gotImage;
+            var gotText;
 
             //starts updates when button is clicked
             document.getElementById("start").addEventListener("click", function(){
@@ -90,18 +93,27 @@
                         var parser = new DOMParser();
                         var htmlDoc = parser.parseFromString(responseText, 'text/html');
 
-                        var links = htmlDoc.querySelectorAll('a:nth-of-type(-n+2)');
-                        if (links.length >= 1){
-                            firstUrl = links[0].href;
-                            processFile(firstUrl);
+                        var links = htmlDoc.querySelectorAll('a');
+                        for(var i = 0; i < links.length; i++){
+                            link = links[i].href;
+                            if(gotImage === 0){
+                                if(getFileExtension(link) === "jpg" || getFileExtension(link) === "png"){
+                                    processImage(link);
+                                    gotImage = 1;
+                                }
+                            }
+                            if(gotText === 0){
+                                if(getFileExtension(link) === "txt"){
+                                    processText(link);
+                                    gotText = 1;
+                                }     
+                            } 
+                            if(gotImage === 1 && gotText === 1)
+                                return;
                         }
-                        if (links.length >= 2){
-                            secondUrl = links[1].href;
-                            //if the second link is of the same file extension, and because it is processed after
-                            //the first link, it might override the display of the first link's data 
-                            if(getFileExtension(firstUrl)!== getFileExtension(secondUrl))
-                                processFile(secondUrl);
-                        }
+                        gotImage = 0;
+                        gotText = 0;
+                        return;
                     };
                 };
                 xhr.send();
@@ -117,6 +129,7 @@
                 return url.substring(url.lastIndexOf('/') + 1);
             }
 
+            /*
             //processes text and image files accordingly
             function processFile(url){
                 var fileExtension = getFileExtension(url);
@@ -126,7 +139,7 @@
                     processText(url)
                 if(fileExtension !== "jpg" && fileExtension !== "png" && fileExtension !== "txt" )
                     window.alert("Error: File format is not supported.");
-            }
+            }*/
 
             //downloads image, displays image and its name on web page, and stores name of image to compare
             //against next processed image so the same image doesn't get downloaded twice
