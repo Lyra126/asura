@@ -20,6 +20,8 @@
         <button id = "start">Start Auto Updates</button>
         <button id = "stop">Stop Auto Updates</button>
         <button id = "download" onclick="downloadAllFiles()">Download All Files</button>
+        <button id = "startAlert" >Start Alerts</button>
+        <button id = "stopAlert">Stop Alerts</button>
         <br>
         <h3 id = "name" class = "original-color"></h3>
         <br>
@@ -27,78 +29,107 @@
         <br>
         <p id = "latest-txt" class = "original-color"></p>
         <br>
-        
         <audio id="audioPlayer" autoplay hidden></audio>
      
         <script>
             //all variables, defining most of them to be global to improve performance and reduce memory allocated
+            var updateIntervalId = null; //updates aren't set to automatically run upon page loading
             var updatesOn = false;
+            var alertsOn = true;
             var homeURL = window.location.protocol + '//' + window.location.hostname + ':' + window.location.port;
             var responseText;
             var parser;
             var htmlDoc;
             var firstUrl = null;
             var secondUrl = null;
-            var test;
-            var filename;
             var imageElement;
             var textElement;
-            var warning = false;
             var warningElement = document.getElementById("warning");
+            var warningText;
+            var previousUrl1;
+            var previousUrl2;
+            var audioPlayer;
 
             //starts updates when button is clicked
             document.getElementById("start").addEventListener("click", function(){
-                updatesOn = true;
-                startUpdate();
+                if (!updateIntervalId) {
+                    updatesOn = true;
+                    // Call startUpdate() immediately
+                    startUpdate();
+                    // Call startUpdate() every 5 seconds and store the interval ID
+                    updateIntervalId = setInterval(startUpdate, 5000);
+                }
             });
 
             //stops updates when button is clicked
             document.getElementById("stop").addEventListener("click", function(){
-                updatesOn = false;
+                if (updateIntervalId) {
+                    updatesOn = false;
+                    // Clear the interval to stop the updates
+                    clearInterval(updateIntervalId);
+                    updateIntervalId = null; // Reset the interval ID
+                }
+            });
+
+            //starts alerts when button is clicked (alerts are defaulted to always be on)
+            document.getElementById("startAlert").addEventListener("click", function(){
+                alertsOn = true;
+            });
+
+            //stops alerts when button is clicked
+            document.getElementById("stopAlert").addEventListener("click", function(){
+                alertsOn = false;
+                setBackToOriginal();
             });
 
             //update function that sends XMLHttpRequest to homeurl to retrieve its contents and process them
             function startUpdate(){
-                if(updatesOn){
-                    var xhr = new XMLHttpRequest();
-                    xhr.open('GET', homeURL, true);
-                    xhr.onreadystatechange = function() {
-                        if (xhr.readyState === 4 && xhr.status === 200) {
-                            var responseText = xhr.responseText;
-                            var parser = new DOMParser();
-                            var htmlDoc = parser.parseFromString(responseText, 'text/html');
+                warningText = " ";
+                //if(!isIce && !isFail && !lowAvgFreq)
+                  //  setBackToOriginal();
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', homeURL, true);
+                xhr.onreadystatechange = function() {
+                    if (xhr.readyState === 4 && xhr.status === 200) {
+                        var responseText = xhr.responseText;
+                        var parser = new DOMParser();
+                        var htmlDoc = parser.parseFromString(responseText, 'text/html');
 
-                            //getting the first two links from the homeurl page which is assumed to be the latest image and its accompanying text file
-                            var links = htmlDoc.querySelectorAll('a:nth-of-type(-n+2)');
-                            if (links.length >= 1){
-                                firstUrl = links[0].href;
-                                processFile(firstUrl);
-                            }
-                            if (links.length >= 2){
-                                secondUrl = links[1].href;
+                        var links = htmlDoc.querySelectorAll('a:nth-of-type(-n+2)');
+                        if (links.length >= 1){
+                            firstUrl = links[0].href;
+                            processFile(firstUrl);
+                        }
+                        if (links.length >= 2){
+                            secondUrl = links[1].href;
+                            //if the second link is of the same file extension, and because it is processed after
+                            //the first link, it might override the display of the first link's data 
+                            if(getFileExtension(firstUrl)!== getFileExtension(secondUrl))
                                 processFile(secondUrl);
-                            }
-                        };
+                        }
                     };
-                    xhr.send();
-                    setTimeout(function() { startUpdate(); }, 5000); 
-                }
+                };
+                xhr.send();
+            }
+
+            //note this is only expecting urls with extensions that consist of 3 characters
+            function getFileExtension(url){
+                return url.substring(url.length - 3);
             }
 
             function processFile(url){
-                var fileExtension = url.substring(url.length - 3);
+                var fileExtension = getFileExtension(url);
                 if(fileExtension === "jpg" || fileExtension === "png")
                     processImage(url)
-                else if(fileExtension === "txt")
+                if(fileExtension === "txt")
                     processText(url)
-                else
+                if(fileExtension !== "jpg" && fileExtension !== "png" && fileExtension !== "txt" )
                     window.alert("Error: File format is not supported.");
             }
 
             function processImage(url){
-                var previousUrl1 = localStorage.getItem('previousUrl1') || '';    
+                previousUrl1 = localStorage.getItem('previousUrl1') || '';   
                 if(previousUrl1 !== url){
-                    var req1 = new XMLHttpRequest();
                     downloadFile(url);
                     var titleElement = document.getElementById("name");
                     titleElement.innerHTML = url.substring(url.lastIndexOf('/') + 1);
@@ -110,29 +141,27 @@
             }
 
             function processText(url){
-                var previousText2 = localStorage.getItem('previousText2') || '';
-                var txtReq = new XMLHttpRequest();
-
-                //fetches text from downloaded file and displays it on html page
-                fetchText(txtReq, url, function(text) {
-                    if (text !== null) {
-                        textElement = document.getElementById("latest-txt");
-                        textElement.innerHTML = text; 
-                        if (text !== previousText2) {
-                            var req2 = new XMLHttpRequest();
-                            downloadFile(url);
-                            localStorage.setItem('previousText2', text);
+                previousUrl2 = localStorage.getItem('previousUrl2') || '';    
+                if(previousUrl2 !== url){
+                    var txtReq = new XMLHttpRequest();
+                    //fetches text from downloaded file and displays it on html page
+                    fetchText(txtReq, url, function(text) {
+                        if (text !== null) {
+                            textElement = document.getElementById("latest-txt");
+                            textElement.innerHTML = text; 
+                            if (text !== previousUrl2) {
+                                var req2 = new XMLHttpRequest();
+                                downloadFile(url);
+                                localStorage.setItem('previousUrl2', text);
+                            }
+                            if(alertsOn)
+                                checkForWarning(text);
+                        } else {
+                            //error handling
+                            console.error('Failed to retrieve text');
                         }
-                    } else {
-                        //error handling
-                        console.error('Failed to retrieve text');
-                    }
-                });
-                checkForWarning(url);
-                if(warning)
-                    playWarning();
-                else
-                    setBackToOriginal();
+                    });
+                }
             }
 
             function extractFileName(url){
@@ -140,7 +169,7 @@
             }
 
             function fetchText(txtReq, secondUrl, callback) {
-                txtReq.open('GET', secondUrl, true);
+                txtReq.open('GET', secondUrl, false);
                 txtReq.onload = function() {
                     if (txtReq.status === 200) {
                         var text = txtReq.responseText;
@@ -156,32 +185,31 @@
                 txtReq.send();
             }
             
+            
             function downloadFile(url) {
                 var fileExtension = url.substring(url.length - 3);
+                var a = document.createElement('a');
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                
                 if (fileExtension === "txt") {
-                    var a = document.createElement('a');
                     a.href = url;
                     a.download = url.split('/').pop();
-                    a.style.display = 'none';
-                    document.body.appendChild(a);
                     a.click();
-                    document.body.removeChild(a);
                 } else {
                     fetch(url)
                     .then(response => response.blob())
                     .then(blob => {
-                        var a = document.createElement('a');
                         a.href = URL.createObjectURL(blob);
                         a.download = url.split('/').pop();
-                        a.style.display = 'none';
-                        document.body.appendChild(a);
                         a.click();
-                        document.body.removeChild(a);
                     })
                     .catch(error => {
                         console.error('Error:', error);
                     });
                 }
+                
+                document.body.removeChild(a);
             }
 
             //downloads all files currently saved on the server
@@ -193,7 +221,7 @@
                         var responseText = xhr.responseText;
                         var parser = new DOMParser();
                         var htmlDoc = parser.parseFromString(responseText, 'text/html');
-                        var links = document.querySelectorAll('a');
+                        var links = htmlDoc.querySelectorAll('a');
                         for (var i = 0; i < links.length; i++)
                             downloadFile(links[i].href);
                     }
@@ -201,54 +229,63 @@
                 xhr.send();
             }
                         
-            function checkForWarning(url){
-                var xhr = new XMLHttpRequest();
-                xhr.open('GET', url, true);
-                xhr.onreadystatechange = function() {
-                if (xhr.status === 200) {
-                    var fileContent = xhr.responseText;
-                                var lines = fileContent.split('\n');
-                                lines.forEach(function(line) {
-                                    // Extract the average frequency value from the line
-                                    var avgMatch = line.match(/AVG:\s+(\d+)/);
-                                    
-                                    if (avgMatch && avgMatch.length > 1) {
-                                        var average = parseInt(avgMatch[1]);
-                                        if (average < 37000)
-                                            warning = true;
-                                        else
-                                            warning = false;
-                                    }
-                                });
-                } else {
-                    console.error('Error:', xhr.statusText);
-                }
-                };
-                xhr.send();
+            function checkForWarning(text){
+                var isIce = false;
+                var isFail = false;
+                var lowAvgFreq = false;
+                warningText = " ";
+                var lines = text.split(/<br>|[\r\n]+/);
+                lines.forEach(function(line) {
+                    //to save time, if all values are all true, just skip checking rest of the lines
+                    if(lowAvgFreq && isFail && isIce)
+                        return;
+                    ///extracting values from each line
+                    var iceMatch = line.match(/ICE:\s+(\d+)/);
+                    var failMatch = line.match(/FAIL:\s+(\d+)/);
+                    var avgMatch = line.match(/AVG:\s+(\d+)/);
+                    if(iceMatch && iceMatch.length > 1 && parseInt(iceMatch[1]) === 1)
+                        isIce = true;
+                    if(failMatch && failMatch.length > 1 && parseInt(failMatch[1]) === 1)
+                        isFail = true;
+                    if (avgMatch && avgMatch.length > 1 && parseInt(avgMatch[1]) < 37000)
+                        lowAvgFreq = true;
+                });
+                //moving these lines outside the loop so multiple of the same warnings don't appear
+                if(isIce)
+                    warningText += "Ice sensor detected ice.<br>"
+                if(isFail)
+                    warningText += "Ice sensor detected failure.<br>"
+                if(lowAvgFreq)
+                    warningText += "Average frequency is detected to be below 37000.<br>"
+                if(isIce || isFail || lowAvgFreq)
+                    playWarning();
             }
 
             function playWarning(){
-                warningElement.innerHTML = "Warning!!";
+                //update warning text
+                warningElement.innerHTML = warningText;
                 var elements = document.getElementsByClassName('original-color');
+                //turn all text to red
                 for (var i = 0; i < elements.length; i++) {
                     elements[i].classList.add('warning-color');
                 }
-                playLocalAudio('mixkit-alert-bells-echo-765.wav');
+                //play alert audio
+                audioPlayer = document.getElementById('audioPlayer');
+                audioPlayer.src = homeURL + '/audio/alert.wav';
+                
             }
             
-            function playLocalAudio(fileUrl) {
-                var audioPlayer = document.getElementById('audioPlayer');
-                audioPlayer.src = fileUrl;
-                audioPlayer.play();
-            }
-
+            //reset back to original display
             function setBackToOriginal() {
-                warningElement.innerHTML = "";
+                warningElement.innerHTML = " ";
                 var elements = document.getElementsByClassName('warning-color');
                 
-                for (var i = 0; i < elements.length; i++) {
-                    elements[i].classList.remove('warning-color');
-                }
+                //to ignore the delay in the class removal due to the asynchronous nature of the code
+                var elements = Array.from(document.getElementsByClassName('warning-color'));
+                elements.forEach(function(element) {
+                    element.classList.remove('warning-color');
+                });
+                audioPlayer.pause();
             }
         </script>                                                                                
     </body>
