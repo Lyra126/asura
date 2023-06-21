@@ -115,9 +115,7 @@
                             if(gotImage === 1 && gotText === 1){
                                 return;
                             }
-                                
                         }
-                        
                     };
                 };
                 xhr.send();
@@ -133,60 +131,33 @@
                 return url.substring(url.lastIndexOf('/') + 1);
             }
 
-            /*
-            //processes text and image files accordingly
-            function processFile(url){
-                var fileExtension = getFileExtension(url);
-                if(fileExtension === "jpg" || fileExtension === "png")
-                    processImage(url)
-                if(fileExtension === "txt")
-                    processText(url)
-                if(fileExtension !== "jpg" && fileExtension !== "png" && fileExtension !== "txt" )
-                    window.alert("Error: File format is not supported.");
-            }*/
-
             //downloads image, displays image and its name on web page, and stores name of image to compare
             //against next processed image so the same image doesn't get downloaded twice
             function processImage(url){
-                console.log("processed...");
-                //previousUrl1 = localStorage.getItem('previousUrl1') || '';   
-                //if(previousUrl1 !== url){
-                    console.log("processed2...");
-                    //downloadFile(url);
-                    var titleElement = document.getElementById("name");
-                    titleElement.innerHTML = url.substring(url.lastIndexOf('/') + 1);
-                    var imageElement;
-                    imageElement = document.querySelector("#latest-img");
-                    imageElement.src = url;
-                    //previousUrl1 = url;
-                    //localStorage.setItem('previousUrl1', previousUrl1);
-                //}  
+                var titleElement = document.getElementById("name");
+                titleElement.innerHTML = url.substring(url.lastIndexOf('/') + 1);
+                var imageElement;
+                imageElement = document.querySelector("#latest-img");
+                imageElement.src = url;
             }
 
             //downloads text, fetches content and displays it on web page, stores name of file to compare
             //against next processed txt file so the same file doesn't get downloaded twice, checks content for errors
             function processText(url){
-                //previousUrl2 = localStorage.getItem('previousUrl2') || '';    
-                //if(previousUrl2 !== url){
-                    var txtReq = new XMLHttpRequest();
-                    //fetches text from downloaded file and displays it on html page
-                    fetchText(txtReq, url, function(text) {
-                        if (text !== null) {
-                            var textElement;
-                            textElement = document.getElementById("latest-txt");
-                            textElement.innerHTML = text; 
-                            if (text !== previousUrl2) {
-                                //downloadFile(url);
-                                //localStorage.setItem('previousUrl2', text);
-                            }
-                            if(alertsOn)
-                                checkForWarning(text);
-                        } else {
-                            //error handling
-                            console.error('Failed to retrieve text');
-                        }
-                    });
-                //}
+                var txtReq = new XMLHttpRequest();
+                //fetches text from downloaded file and displays it on html page
+                fetchText(txtReq, url, function(text) {
+                    if (text !== null) {
+                        var textElement;
+                        textElement = document.getElementById("latest-txt");
+                        textElement.innerHTML = text; 
+                        if(alertsOn)
+                            checkForWarning(text);
+                    } else {
+                        //error handling
+                        console.error('Failed to retrieve text');
+                    }
+                });
             }
 
             //fetches content from text file
