@@ -36,7 +36,7 @@
             var updateIntervalId = null; //updates aren't set to automatically run upon page loading
             var updatesOn = false;
             var alertsOn = true;
-            var homeURL = window.location.protocol + '//' + window.location.hostname ;
+            var homeURL = window.location.protocol + '//' + window.location.hostname;
             var responseText;
             var parser;
             var htmlDoc;
@@ -97,7 +97,9 @@
 
                         var links = htmlDoc.querySelectorAll('a');
                         for(let i = 0; i < links.length; i++){
+                    
                             link = links[i].href;
+                 
                             if(gotImage === 0){
                                 if(getFileExtension(link) === "jpg" || getFileExtension(link) === "png"){
                                     processImage(link);
